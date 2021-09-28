@@ -1,5 +1,7 @@
+import { ethers } from "ethers";
 import React, { useEffect, useState } from "react";
 import "./App.css";
+import NFT from "./utils/NFT.json";
 
 const OPENSEA_LINK = "";
 const TOTAL_MINT_COUNT = 50;
@@ -44,6 +46,37 @@ function App(): JSX.Element {
     }
   };
 
+  const mintNFT = async (): Promise<void> => {
+    const CONTRACT_ADDRESS = "0x21cA45c5E7E7886364C03035CA232Ac72b8e7644";
+    try {
+      const { ethereum } = window;
+
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          NFT.abi,
+          signer
+        );
+
+        console.log("Going to pop wallet now to pay gas...");
+        let nftTxn = await connectedContract.mint();
+
+        console.log("Mining...please wait.");
+        await nftTxn.wait();
+
+        console.log(
+          `Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`
+        );
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     checkIfWalletIsConnected();
   }, []);
@@ -62,7 +95,7 @@ function App(): JSX.Element {
     <button
       type="button"
       className="gradient-wave mt-20 bg-gradient-to-r from-purple-500 via-pink-500 to-red-400 text-white font-semibold px-6 py-3 rounded-md"
-      onClick={connectWallet}
+      onClick={mintNFT}
     >
       Mint NFT
     </button>
