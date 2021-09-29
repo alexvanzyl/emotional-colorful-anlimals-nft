@@ -97,6 +97,8 @@ contract NFT is ERC721URIStorage {
         "Mouse"
     ];
 
+    event NewNFTMinted(address indexed sender, uint256 indexed tokenId);
+
     constructor() ERC721("AnonymousNFT", "WAA") {
         console.log("This is my NFT contract. Woah!");
     }
@@ -145,6 +147,7 @@ contract NFT is ERC721URIStorage {
             msg.sender
         );
         _tokenId.increment();
+        emit NewNFTMinted(msg.sender, newItemId);
     }
 
     function pickRandomFirstWord(uint256 tokenId)
