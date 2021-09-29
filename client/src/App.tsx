@@ -6,15 +6,23 @@ import Alert from "./components/Alert";
 import Spinner from "./components/Spinner";
 import NFT from "./utils/NFT.json";
 
-const CONTRACT_ADDRESS = "0x65Ea11c00cfDe194EfBE473E93ac10D5f7EEA970";
+const CONTRACT_ADDRESS = "0x44765d08c882711f13B38F6900851BCAA29592B4";
 const RINKEBY_NETWORK_ID = 4;
+const MAX_SUPPLY = 50;
 const TWITTER_HANDLE = "alexvanzyl";
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 
 function App(): JSX.Element {
   const [currentAccount, setCurrentAccount] = useState("");
   const [currentNetwork, setCurrentNetwork] = useState(0);
+  const [totalSupply, setTotalSupply] = useState(0);
   const [isMinting, setIsMinting] = useState(false);
+
+  const getContract = (readOnly?: boolean): ethers.Contract => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signerOrProvider = readOnly ? provider : provider.getSigner();
+    return new ethers.Contract(CONTRACT_ADDRESS, NFT.abi, signerOrProvider);
+  };
 
   const checkIfWalletIsConnected = async (): Promise<void> => {
     const { ethereum } = window;
@@ -39,6 +47,8 @@ function App(): JSX.Element {
 
       setCurrentAccount(account);
     }
+
+    initEventListener();
   };
 
   const connectWallet = async (): Promise<void> => {
@@ -67,13 +77,7 @@ function App(): JSX.Element {
       if (ethereum) {
         setIsMinting(true);
 
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const connectedContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          NFT.abi,
-          signer
-        );
+        const connectedContract = getContract();
 
         console.log("Going to pop wallet now to pay gas...");
         let nftTxn = await connectedContract.mint();
@@ -82,6 +86,7 @@ function App(): JSX.Element {
         await nftTxn.wait();
 
         setIsMinting(false);
+        await getTotalSupply();
         console.log(
           `Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`
         );
@@ -99,14 +104,7 @@ function App(): JSX.Element {
       const { ethereum } = window;
 
       if (ethereum) {
-        // Same stuff again
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const connectedContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          NFT.abi,
-          signer
-        );
+        const connectedContract = getContract();
         connectedContract.on("NewNFTMinted", (fromAddress, tokenId) => {
           console.log(fromAddress, tokenId.toNumber());
           alert(
@@ -114,14 +112,23 @@ function App(): JSX.Element {
           );
         });
       } else {
+        console.log("Ethereum object doesn't exist!");
       }
     } catch (err) {
       console.log(err);
     }
   };
 
+  const getTotalSupply = async (): Promise<void> => {
+    const connectedContract = getContract(true);
+    const total = await connectedContract.getTotalSupply();
+    setTotalSupply(parseInt(total));
+  };
+
   useEffect(() => {
     checkIfWalletIsConnected();
+    getTotalSupply();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const renderNotConnectedContainer = (): JSX.Element => (
@@ -179,6 +186,9 @@ function App(): JSX.Element {
           : !currentAccount
           ? renderNotConnectedContainer()
           : renderMintUI()}
+        <div className="text-white text-sm mt-2">
+          {totalSupply} / {MAX_SUPPLY} left
+        </div>
         <div className="mt-20 text-5xl">&#128018; &#129418; &#128005;</div>
         <div className="mt-20 flex justify-center items-center text-md text-white">
           <img alt="Twitter Logo" className="h-8 w-8" src={twitterLogo} />

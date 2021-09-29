@@ -12,6 +12,8 @@ contract NFT is ERC721URIStorage {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenId;
 
+    uint256 public totalSupply = 50;
+
     string private baseSvg =
         "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: white; font-family: serif; font-size: 24px; }</style><rect width='100%' height='100%' fill='black' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
 
@@ -104,6 +106,9 @@ contract NFT is ERC721URIStorage {
     }
 
     function mint() public payable {
+        require(totalSupply > 0);
+        totalSupply -= 1;
+
         uint256 newItemId = _tokenId.current();
 
         string memory first = pickRandomFirstWord(newItemId);
@@ -188,5 +193,9 @@ contract NFT is ERC721URIStorage {
 
     function random(string memory input) internal pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(input)));
+    }
+
+    function getTotalSupply() public view returns (uint256) {
+        return totalSupply;
     }
 }
